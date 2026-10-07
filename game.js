@@ -40,7 +40,7 @@ box(0,-.5,0,300,1,420,0x809b61,false);
 slab(0,0,24,380,asphalt);
 box(-15,.08,0,6,.16,380,0xb8b1a3,false);
 box(15,.08,0,6,.16,380,0xb8b1a3,false);
-box(0,.12,0,1.5,.18,380,0xd6c66a,false);
+for(let z=-175;z<180;z+=12) box(0,.13,z,.12,.03,5.5,0xe9e6d8,false);
 
 // road markings
 for(let z=-180;z<190;z+=14){
@@ -60,7 +60,7 @@ function building(x,z,w,h,d,color){
  // simple windows
  const front=x<0?x+w/2+.07:x-w/2-.07;
  for(let yy=5;yy<h-1;yy+=3.3)for(let zz=z-d*.35;zz<=z+d*.35;zz+=3.4)
-   box(front,yy,zz,.13,1.25,1.45,0x6d8792,false);
+   {box(front,yy,zz,.16,1.35,1.58,0xe5ded0,false);box(front+(x<0?.04:-.04),yy,zz,.18,1.08,1.28,0x526d78,false);box(front+(x<0?.08:-.08),yy-.72,zz,.22,.10,1.7,0x8f887a,false);}
  return b;
 }
 for(let z=-160,i=0;z<=160;z+=28,i++){
@@ -149,6 +149,73 @@ for(const cfg of [[-95,-292,45,42,0x66705f],[92,-300,55,48,0x707166]]){
 }
 // a small landscaped central strip / square
 for(let z=-35;z<=35;z+=14){const g=new THREE.Mesh(new THREE.CylinderGeometry(1.15,1.25,.25,12),mat(0xd5cfb9));g.position.set(0,.22,z);scene.add(g);const b=new THREE.Mesh(new THREE.IcosahedronGeometry(.75,1),mat(0x3e7035));b.position.set(0,1,z);scene.add(b)}
+
+
+// --- highly visible Iğdır street façade pass ---
+function doorShop(x,z,side,name,color){
+ const face=x<0?x+8.08:x-8.08;
+ // recessed storefront frame
+ box(face,1.65,z,.22,3.25,7.8,0x252a2b,false);
+ for(const dz of[-2.5,0,2.5]) box(face+(x<0?.04:-.04),1.75,z+dz,.25,2.45,1.75,0x6f8991,false);
+ // awning
+ const aw=box(face+(x<0?.38:-.38),3.35,z,.75,.22,7.7,color,false);
+ // sign
+ sign(face+(x<0?.5:-.5),4.15,z,name,color);
+}
+doorShop(-28,-108,1,"FIRIN",0x9b2f28);
+doorShop(28,-82,-1,"MARKET",0x286242);
+doorShop(-28,-24,1,"LOKANTA",0x81542e);
+doorShop(28,38,-1,"ECZANE",0xb12626);
+doorShop(-28,92,1,"KAFE",0x5d4536);
+
+// cross streets and intersections so the city no longer reads as one endless corridor
+for(const z of[-70,45]){
+ box(0,.075,z,115,.14,15,0x56595a,false);
+ for(let x=-48;x<=48;x+=10) box(x,.16,z,.18,.03,5.2,0xe8e5d8,false);
+ // zebra crossings
+ for(let x=-8;x<=8;x+=2.2){box(x,.17,z-8,1.2,.035,3.6,0xf0eee5,false);box(x,.17,z+8,1.2,.035,3.6,0xf0eee5,false)}
+}
+
+// traffic lights at the main intersection
+function trafficLight(x,z,rot=0){
+ const g=new THREE.Group();meshBox(g,0,2.7,0,.14,5.4,.14,mat(0x3c4142,.45,.4));
+ const housing=meshBox(g,0,5.1,0,.45,1.25,.45,mat(0x202526,.5,.25));
+ for(const [y,c,e] of [[5.48,0xc6372d,0xff3020],[5.10,0xb28a28,0xffb51b],[4.72,0x32834a,0x2bff66]]){
+  const l=new THREE.Mesh(new THREE.SphereGeometry(.12,10,8),new THREE.MeshStandardMaterial({color:c,emissive:e,emissiveIntensity:.55}));l.position.set(0,y,.24);g.add(l);
+ }
+ g.position.set(x,0,z);g.rotation.y=rot;scene.add(g);
+}
+trafficLight(-10,-70);trafficLight(10,-70,Math.PI);trafficLight(-10,45);trafficLight(10,45,Math.PI);
+
+// rooftop details, satellite dishes and AC boxes
+function roofDetails(x,z,h){
+ for(const dz of[-5,4]) box(x,h+.45,z+dz,2.4,.9,1.6,0x9d9b91,false);
+ const pole=cylinder(x,h+1.3,z+1,.06,2.2,0x55595a);
+}
+for(let z=-140,i=0;z<=140;z+=56,i++){roofDetails(-28,z,12+(i%4)*2.2);roofDetails(28,z+6,13+((i+2)%4)*2)}
+
+// bus shelters
+function shelter(x,z,side){
+ const g=new THREE.Group();const dark=mat(0x343b3d,.4,.35),glass=new THREE.MeshStandardMaterial({color:0x88a7b1,transparent:true,opacity:.38,roughness:.2});
+ meshBox(g,0,1.35,0,.10,2.7,4.6,glass);meshBox(g,side*.8,2.75,0,1.7,.12,4.8,dark);meshBox(g,side*.15,.55,0,.45,.12,3.1,mat(0x75583e));
+ g.position.set(x,0,z);scene.add(g);
+}
+shelter(-16.7,15,1);shelter(16.7,-42,-1);
+
+// foreground sidewalk clutter: bins, hydrant-like utility boxes, café tables
+for(const z of[-125,-95,-5,78,122]){
+ box(-17,.55,z,.75,1.1,.75,0x3f5145,false);
+ box(17,.55,z+12,.75,1.1,.75,0x3f5145,false);
+}
+function cafeSet(x,z){
+ const top=new THREE.Mesh(new THREE.CylinderGeometry(.65,.65,.08,16),mat(0x7c6046));top.position.set(x,.85,z);scene.add(top);
+ cylinder(x,.42,z,.08,.84,0x44484a);
+ for(const dz of[-1.05,1.05]){box(x,.45,z+dz,.7,.08,.7,0x76553d,false);box(x,.22,z+dz,.08,.44,.08,0x44484a,false)}
+}
+cafeSet(-16.2,88);cafeSet(-16.2,93);
+
+// varied foreground trees, avoiding the copy-paste row feeling
+detailedTree(-18.2,132,1.25);detailedTree(18.2,118,1.15);detailedTree(-18.2,-122,1.18);
 
 // player
 const p={pos:new THREE.Vector3(0,1.72,145),velY:0,ground:true,r:.38};
