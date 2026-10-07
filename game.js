@@ -135,25 +135,103 @@ mountain(-10,-420,130,135,0x716e69);
 const snow=new THREE.Mesh(new THREE.ConeGeometry(31,31,48),mat(0xf2f0ea,.95));snow.position.set(-10,120,-420);snow.scale.z=.6;scene.add(snow);
 
 const loader=new GLTFLoader();
+const traffic=[];
+
 function normalize(obj,h){
-  obj.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(obj),s=new THREE.Vector3();b.getSize(s);
-  if(!Number.isFinite(s.y)||s.y<=0)return;
-  obj.scale.multiplyScalar(h/s.y);obj.updateMatrixWorld(true);const b2=new THREE.Box3().setFromObject(obj);obj.position.y-=b2.min.y;
+  obj.updateMatrixWorld(true);
+  const bounds=new THREE.Box3().setFromObject(obj),size=new THREE.Vector3();
+  bounds.getSize(size);
+  if(!Number.isFinite(size.y)||size.y<=0)return;
+  obj.scale.multiplyScalar(h/size.y);
+  obj.updateMatrixWorld(true);
+  const b2=new THREE.Box3().setFromObject(obj);
+  obj.position.y-=b2.min.y;
 }
-loader.load("./assets/human.glb",g=>{
-  const t=g.scene;normalize(t,1.75);
-  [[-15,150,-1],[-16,110,1],[15,80,-1],[16,30,1],[-15,-20,-1],[15,-75,1],[-16,-130,-1],[16,-170,1]].forEach((p,i)=>{
-    const o=t.clone(true);o.position.set(p[0],0,p[1]);o.rotation.y=p[2]>0?0:Math.PI;o.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});scene.add(o);
-    walkers.push({o,dir:p[2],speed:.38+(i%3)*.08});
-  });
-},undefined,e=>console.warn("human.glb kon niet laden; game blijft werken.",e));
+
+function pedestrianModel(seed=0){
+  const g=new THREE.Group();
+  const skin=[0xd7a27f,0xb97855,0xe0b08b,0x9b684e][seed%4];
+  const shirt=[0x304f70,0x7a3f35,0x3f654c,0x5d4d75,0x7b6b42][seed%5];
+  const pants=[0x252a30,0x343c48,0x4c443e][seed%3];
+  const shoe=0x202124,hair=[0x201915,0x3b2a20,0x171717,0x5a4030][seed%4];
+  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.24,.55,5,8),mat(shirt,.8));torso.position.y=1.18;g.add(torso);
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(.075,.085,.13,8),mat(skin));neck.position.y=1.62;g.add(neck);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.19,14,10),mat(skin,.9));head.scale.set(.88,1.08,.9);head.position.y=1.82;g.add(head);
+  const hairMesh=new THREE.Mesh(new THREE.SphereGeometry(.195,14,8,0,Math.PI*2,0,Math.PI*.52),mat(hair,.9));hairMesh.position.y=1.88;g.add(hairMesh);
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(.035,.09,7),mat(skin));nose.rotation.x=Math.PI/2;nose.position.set(0,1.82,-.18);g.add(nose);
+  const arms=[],legs=[];
+  for(const side of[-1,1]){
+    const shoulder=new THREE.Group();shoulder.position.set(side*.31,1.42,0);g.add(shoulder);
+    const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.07,.5,4,7),mat(skin,.9));arm.position.y=-.3;shoulder.add(arm);arms.push(shoulder);
+    const hip=new THREE.Group();hip.position.set(side*.13,.83,0);g.add(hip);
+    const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.09,.62,4,7),mat(pants,.9));leg.position.y=-.37;hip.add(leg);
+    const foot=new THREE.Mesh(new THREE.BoxGeometry(.18,.12,.32),mat(shoe));foot.position.set(0,-.75,-.08);hip.add(foot);legs.push(hip);
+  }
+  g.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});
+  g.userData.arms=arms;g.userData.legs=legs;
+  return g;
+}
+
+const pedestrianSpawns=[
+  [-15,165,-1],[-16,122,1],[15,92,-1],[16,48,1],[-15,5,-1],[15,-42,1],
+  [-16,-92,-1],[16,-145,1],[-18,-175,1],[18,175,-1],[-15,68,1],[15,-118,-1]
+];
+pedestrianSpawns.forEach((p,i)=>{
+  const o=pedestrianModel(i);o.position.set(p[0],0,p[1]);o.rotation.y=p[2]>0?0:Math.PI;scene.add(o);
+  walkers.push({o,dir:p[2],speed:.75+(i%4)*.08,phase:i*.7,laneX:p[0],wait:0});
+});
+
+function nearestCarDistance(x,z){
+  let d=Infinity;
+  for(const c of traffic)d=Math.min(d,Math.hypot(c.o.position.x-x,c.o.position.z-z));
+  return d;
+}
 
 loader.load("./assets/generic_80s_european_car.glb",g=>{
-  const t=g.scene;normalize(t,1.45);
-  [[-7.5,130,0],[7.5,70,Math.PI],[-7.5,-50,0],[7.5,-145,Math.PI],[-80,-105,Math.PI/2],[95,55,-Math.PI/2]].forEach(p=>{
-    const o=t.clone(true);o.position.set(p[0],0,p[1]);o.rotation.y=p[2];o.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});scene.add(o);
+  const template=g.scene;normalize(template,1.45);
+  const routes=[
+    {x:-5.2,z:-190,dir:1,speed:7.2},{x:5.2,z:180,dir:-1,speed:6.5},
+    {x:-5.2,z:-70,dir:1,speed:5.8},{x:5.2,z:65,dir:-1,speed:7.5},
+    {x:-80,z:-110,dir:1,speed:5.5,horizontal:true},{x:100,z:55,dir:-1,speed:6.2,horizontal:true}
+  ];
+  routes.forEach((r,i)=>{
+    const o=template.clone(true);o.position.set(r.x,0,r.z);
+    o.rotation.y=r.horizontal?(r.dir>0?-Math.PI/2:Math.PI/2):(r.dir>0?0:Math.PI);
+    o.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});
+    scene.add(o);traffic.push({o,...r,phase:i});
   });
-},undefined,e=>console.warn("car.glb kon niet laden; game blijft werken.",e));
+},undefined,e=>console.warn("Auto GLB kon niet laden; verkeer wordt overgeslagen.",e));
+
+function updateTraffic(dt){
+  for(const c of traffic){
+    if(c.horizontal){
+      c.o.position.x+=c.dir*c.speed*dt;
+      if(c.o.position.x>155)c.o.position.x=-155;
+      if(c.o.position.x<-155)c.o.position.x=155;
+    }else{
+      c.o.position.z+=c.dir*c.speed*dt;
+      if(c.o.position.z>205)c.o.position.z=-205;
+      if(c.o.position.z<-205)c.o.position.z=205;
+    }
+  }
+}
+
+function updatePedestrians(dt){
+  const time=performance.now()*.008;
+  for(const w of walkers){
+    const danger=nearestCarDistance(w.o.position.x,w.o.position.z);
+    const nearIntersection=[-180,-145,-110,-70,-35,10,55,95,135,175].some(z=>Math.abs(w.o.position.z-z)<7);
+    if(danger<5.5&&nearIntersection){w.wait=.45;}
+    if(w.wait>0){w.wait-=dt;continue;}
+    w.o.position.z+=w.dir*w.speed*dt;
+    if(w.o.position.z>195||w.o.position.z<-195){w.dir*=-1;w.o.rotation.y+=Math.PI}
+    const swing=Math.sin(time+w.phase)*.48;
+    w.o.userData.arms[0].rotation.x=swing;w.o.userData.arms[1].rotation.x=-swing;
+    w.o.userData.legs[0].rotation.x=-swing*.72;w.o.userData.legs[1].rotation.x=swing*.72;
+    if(danger<3.5)w.o.position.x+=(w.o.position.x<0?-1:1)*dt*1.4;
+    else w.o.position.x+=((w.laneX-w.o.position.x)*Math.min(1,dt*2));
+  }
+}
 
 const player={pos:new THREE.Vector3(0,1.72,185),vy:0,ground:true,r:.4};
 camera.position.copy(player.pos);
