@@ -489,6 +489,7 @@ const horizontalRoads = [
     175
 ];
 
+<<<<<<< HEAD
 for (const z of horizontalRoads) {
 
     createRoad(
@@ -498,8 +499,19 @@ for (const z of horizontalRoads) {
         z,
         8
     );
+=======
+// a recognizable municipal/civic square anchor
+slab(72,104,31,28,pavers,.12);
+box(72,1.0,104,7,2,7,0xbdb5a3);
+cyl(72,4.1,104,.38,6.2,0x7b7468,12);
+const civicTreeSpots=[[61,94],[82,94],[61,115],[82,115]];
+>>>>>>> cfac833022c5f12898615da787e65ccbfdffd217
 
 }
+<<<<<<< HEAD
+=======
+for(let z=-178;z<=180;z+=15){if(![-110,-35,55,135].some(q=>Math.abs(z-q)<11)){tree(-18.3,z,.9);tree(18.3,z+7,.94)}}\ncivicTreeSpots.forEach(p=>tree(p[0],p[1],.95));
+>>>>>>> cfac833022c5f12898615da787e65ccbfdffd217
 
 
 // ======================================================
@@ -1112,6 +1124,41 @@ function createBuilding(
 
     );
 
+<<<<<<< HEAD
+=======
+// menu cinematic / player
+const p={pos:new THREE.Vector3(0,1.72,165),velY:0,ground:true,r:.38};camera.position.copy(p.pos);
+let yaw=0,pitch=0,locked=false,isNight=false;const keys={};
+const start=document.querySelector("#start"),transition=document.querySelector("#transition");
+const playButton=document.querySelector("#play");
+if(playButton) playButton.addEventListener("click",()=>{
+ start.style.display="none";
+ transition?.classList.add("show");
+ setTimeout(()=>{try{renderer.domElement.requestPointerLock()}catch(e){console.warn("Pointer lock:",e)}},180);
+ setTimeout(()=>transition?.classList.remove("show"),650);
+});
+document.addEventListener("pointerlockchange",()=>{locked=document.pointerLockElement===renderer.domElement;start.style.display=locked?"none":"block"});
+document.addEventListener("mousemove",e=>{if(!locked)return;yaw-=e.movementX*.002;pitch-=e.movementY*.002;pitch=Math.max(-1.45,Math.min(1.45,pitch));camera.rotation.set(pitch,yaw,0)});
+function setNight(v){isNight=v;scene.background.set(v?0x17263b:0xa7cfe4);scene.fog.color.set(v?0x17263b:0xa7cfe4);hemi.intensity=v?.48:2;sun.intensity=v?.22:3;renderer.toneMappingExposure=v?.72:1.08;nightLights.forEach(l=>l.intensity=v?7:0)}
+document.addEventListener("keydown",e=>{keys[e.code]=true;if(e.code==="Space"&&p.ground){p.velY=6.4;p.ground=false}if(e.code==="KeyN")setNight(!isNight)});
+document.addEventListener("keyup",e=>keys[e.code]=false);
+function hit(x,z){for(const o of solids)if(x+p.r>o.a&&x-p.r<o.b&&z+p.r>o.c&&z-p.r<o.d)return true;return false}
+const clock=new THREE.Clock();
+function loop(){
+ requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.04);
+ if(locked){
+  const f=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw)),r=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw)),v=new THREE.Vector3();
+  if(keys.KeyW)v.add(f);if(keys.KeyS)v.sub(f);if(keys.KeyD)v.add(r);if(keys.KeyA)v.sub(r);
+  if(v.lengthSq())v.normalize().multiplyScalar((keys.ShiftLeft?8.5:5.3)*dt);
+  if(!hit(p.pos.x+v.x,p.pos.z))p.pos.x+=v.x;if(!hit(p.pos.x,p.pos.z+v.z))p.pos.z+=v.z;
+  p.velY-=18*dt;p.pos.y+=p.velY*dt;if(p.pos.y<=1.72){p.pos.y=1.72;p.velY=0;p.ground=true}
+  camera.position.copy(p.pos);if(v.lengthSq()&&p.ground)camera.position.y+=Math.sin(performance.now()*.011)*.024;
+ }else{
+  const t=performance.now()*.0001;camera.position.set(Math.sin(t)*42,10,128+Math.cos(t)*25);camera.lookAt(0,5,-45);
+ }
+ walkers.forEach(w=>{w.o.position.z+=w.dir*w.speed*dt;if(w.o.position.z>178||w.o.position.z<-178){w.dir*=-1;w.o.rotation.y+=Math.PI}});
+ renderer.render(scene,camera);
+>>>>>>> cfac833022c5f12898615da787e65ccbfdffd217
 }
 
 
