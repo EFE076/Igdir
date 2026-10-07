@@ -149,27 +149,55 @@ function normalize(obj,h){
 }
 
 function pedestrianModel(seed=0){
-  const g=new THREE.Group();
+  const root=new THREE.Group();
   const skin=[0xd7a27f,0xb97855,0xe0b08b,0x9b684e][seed%4];
   const shirt=[0x304f70,0x7a3f35,0x3f654c,0x5d4d75,0x7b6b42][seed%5];
   const pants=[0x252a30,0x343c48,0x4c443e][seed%3];
-  const shoe=0x202124,hair=[0x201915,0x3b2a20,0x171717,0x5a4030][seed%4];
-  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.24,.55,5,8),mat(shirt,.8));torso.position.y=1.18;g.add(torso);
-  const neck=new THREE.Mesh(new THREE.CylinderGeometry(.075,.085,.13,8),mat(skin));neck.position.y=1.62;g.add(neck);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(.19,14,10),mat(skin,.9));head.scale.set(.88,1.08,.9);head.position.y=1.82;g.add(head);
-  const hairMesh=new THREE.Mesh(new THREE.SphereGeometry(.195,14,8,0,Math.PI*2,0,Math.PI*.52),mat(hair,.9));hairMesh.position.y=1.88;g.add(hairMesh);
-  const nose=new THREE.Mesh(new THREE.ConeGeometry(.035,.09,7),mat(skin));nose.rotation.x=Math.PI/2;nose.position.set(0,1.82,-.18);g.add(nose);
-  const arms=[],legs=[];
+  const hair=[0x201915,0x3b2a20,0x171717,0x5a4030][seed%4],shoe=0x202124;
+  const mesh=(geo,c)=>{const o=new THREE.Mesh(geo,mat(c,.82));o.castShadow=o.receiveShadow=true;return o};
+  const joint=(r,c=skin)=>mesh(new THREE.SphereGeometry(r,10,8),c);
+  const limb=(r,len,c)=>{const o=mesh(new THREE.CapsuleGeometry(r,len,5,9),c);o.position.y=-len/2-r;return o};
+
+  // pelvis, abdomen, chest and shoulders give the body a less blocky silhouette
+  const pelvis=mesh(new THREE.CapsuleGeometry(.18,.18,5,10),pants);pelvis.position.y=.91;pelvis.scale.x=1.15;root.add(pelvis);
+  const abdomen=mesh(new THREE.CapsuleGeometry(.20,.28,5,10),shirt);abdomen.position.y=1.16;root.add(abdomen);
+  const chest=mesh(new THREE.CapsuleGeometry(.24,.30,5,10),shirt);chest.position.y=1.39;chest.scale.x=1.15;root.add(chest);
+  const neck=mesh(new THREE.CylinderGeometry(.075,.09,.14,10),skin);neck.position.y=1.67;root.add(neck);
+
+  const head=mesh(new THREE.SphereGeometry(.19,18,14),skin);head.scale.set(.88,1.08,.92);head.position.y=1.86;root.add(head);
+  const ears=[-1,1].map(side=>{const e=mesh(new THREE.SphereGeometry(.038,9,7),skin);e.scale.set(.55,1,.45);e.position.set(side*.177,1.86,0);root.add(e);return e});
+  const nose=mesh(new THREE.ConeGeometry(.032,.085,8),skin);nose.rotation.x=Math.PI/2;nose.position.set(0,1.86,-.18);root.add(nose);
+  for(const x of[-.065,.065]){const eye=mesh(new THREE.SphereGeometry(.014,8,6),0x242424);eye.position.set(x,1.91,-.174);root.add(eye)}
+  const hairCap=mesh(new THREE.SphereGeometry(.198,18,10,0,Math.PI*2,0,Math.PI*.54),hair);hairCap.position.y=1.93;root.add(hairCap);
+
+  const shoulders=[],elbows=[],hips=[],knees=[];
   for(const side of[-1,1]){
-    const shoulder=new THREE.Group();shoulder.position.set(side*.31,1.42,0);g.add(shoulder);
-    const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.07,.5,4,7),mat(skin,.9));arm.position.y=-.3;shoulder.add(arm);arms.push(shoulder);
-    const hip=new THREE.Group();hip.position.set(side*.13,.83,0);g.add(hip);
-    const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.09,.62,4,7),mat(pants,.9));leg.position.y=-.37;hip.add(leg);
-    const foot=new THREE.Mesh(new THREE.BoxGeometry(.18,.12,.32),mat(shoe));foot.position.set(0,-.75,-.08);hip.add(foot);legs.push(hip);
+    // arm hierarchy: shoulder -> upper arm -> elbow -> forearm -> wrist -> hand -> fingers
+    const shoulder=new THREE.Group();shoulder.position.set(side*.31,1.52,0);root.add(shoulder);
+    shoulder.add(joint(.085,shirt));
+    const upper=limb(.068,.27,shirt);shoulder.add(upper);
+    const elbow=new THREE.Group();elbow.position.y=-.405;shoulder.add(elbow);elbow.add(joint(.072));
+    const fore=limb(.06,.25,skin);elbow.add(fore);
+    const wrist=new THREE.Group();wrist.position.y=-.36;elbow.add(wrist);wrist.add(joint(.052));
+    const hand=mesh(new THREE.SphereGeometry(.07,10,8),skin);hand.scale.set(.75,1.25,.55);hand.position.y=-.085;wrist.add(hand);
+    for(let finger=0;finger<4;finger++){
+      const fg=mesh(new THREE.CapsuleGeometry(.011,.075,3,6),skin);
+      fg.position.set((finger-1.5)*.025,-.16,-.005);wrist.add(fg);
+    }
+    const thumb=mesh(new THREE.CapsuleGeometry(.012,.055,3,6),skin);thumb.rotation.z=side*.65;thumb.position.set(side*.07,-.11,-.005);wrist.add(thumb);
+    shoulders.push(shoulder);elbows.push(elbow);
+
+    // leg hierarchy: hip -> thigh -> knee -> shin -> ankle -> foot
+    const hip=new THREE.Group();hip.position.set(side*.13,.91,0);root.add(hip);hip.add(joint(.105,pants));
+    const thigh=limb(.095,.32,pants);hip.add(thigh);
+    const knee=new THREE.Group();knee.position.y=-.49;hip.add(knee);knee.add(joint(.09,pants));
+    const shin=limb(.078,.31,pants);knee.add(shin);
+    const ankle=new THREE.Group();ankle.position.y=-.46;knee.add(ankle);ankle.add(joint(.062,skin));
+    const foot=mesh(new THREE.CapsuleGeometry(.07,.20,4,8),shoe);foot.rotation.x=Math.PI/2;foot.position.set(0,-.07,-.12);ankle.add(foot);
+    hips.push(hip);knees.push(knee);
   }
-  g.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});
-  g.userData.arms=arms;g.userData.legs=legs;
-  return g;
+  root.userData.rig={shoulders,elbows,hips,knees};
+  return root;
 }
 
 const pedestrianSpawns=[
@@ -225,9 +253,16 @@ function updatePedestrians(dt){
     if(w.wait>0){w.wait-=dt;continue;}
     w.o.position.z+=w.dir*w.speed*dt;
     if(w.o.position.z>195||w.o.position.z<-195){w.dir*=-1;w.o.rotation.y+=Math.PI}
-    const swing=Math.sin(time+w.phase)*.48;
-    w.o.userData.arms[0].rotation.x=swing;w.o.userData.arms[1].rotation.x=-swing;
-    w.o.userData.legs[0].rotation.x=-swing*.72;w.o.userData.legs[1].rotation.x=swing*.72;
+    const swing=Math.sin(time+w.phase)*.58;
+    const bend=(Math.sin(time+w.phase)+1)*.18;
+    const rig=w.o.userData.rig;
+    rig.shoulders[0].rotation.x=swing;rig.shoulders[1].rotation.x=-swing;
+    rig.elbows[0].rotation.x=-.18-Math.max(0,-swing)*.42;
+    rig.elbows[1].rotation.x=-.18-Math.max(0,swing)*.42;
+    rig.hips[0].rotation.x=-swing*.72;rig.hips[1].rotation.x=swing*.72;
+    rig.knees[0].rotation.x=Math.max(0,swing)*.62+bend*.2;
+    rig.knees[1].rotation.x=Math.max(0,-swing)*.62+bend*.2;
+    w.o.position.y=Math.abs(Math.sin(time+w.phase))*.018;
     if(danger<3.5)w.o.position.x+=(w.o.position.x<0?-1:1)*dt*1.4;
     else w.o.position.x+=((w.laneX-w.o.position.x)*Math.min(1,dt*2));
   }
