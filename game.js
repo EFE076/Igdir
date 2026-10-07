@@ -8,7 +8,7 @@ camera.rotation.order="YXZ";
 const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setSize(innerWidth,innerHeight);
-renderer.shadowMap.enabled=true;\nrenderer.outputColorSpace=THREE.SRGBColorSpace;\nrenderer.toneMapping=THREE.ACESFilmicToneMapping;\nrenderer.toneMappingExposure=1.05;
+renderer.shadowMap.enabled=true;\nrenderer.shadowMap.type=THREE.PCFSoftShadowMap;\nrenderer.outputColorSpace=THREE.SRGBColorSpace;\nrenderer.toneMapping=THREE.ACESFilmicToneMapping;\nrenderer.toneMappingExposure=1.05;
 document.querySelector("#game").appendChild(renderer.domElement);
 
 scene.add(new THREE.HemisphereLight(0xe9f6ff,0x77835d,2.4));
@@ -96,6 +96,60 @@ mountain.position.set(0,38,-315);mountain.scale.x=1.75;scene.add(mountain);
 const snow=new THREE.Mesh(new THREE.ConeGeometry(29,34,32),new THREE.MeshStandardMaterial({color:0xeee9df,roughness:1}));
 snow.position.set(0,86,-315);snow.scale.x=1.75;scene.add(snow);
 
+
+// --- Iğdır finishing pass: dense street detail, warm lighting, local greenery ---
+function mat(c,rough=.85,metal=0){return new THREE.MeshStandardMaterial({color:c,roughness:rough,metalness:metal})}
+function meshBox(parent,x,y,z,w,h,d,m){
+ const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o;
+}
+function detailedTree(x,z,s=1){
+ const g=new THREE.Group(), trunk=mat(0x5a402d), leaf1=mat(0x416b31),leaf2=mat(0x557b39);
+ meshBox(g,0,2.2*s,0,.55*s,4.4*s,.55*s,trunk);
+ for(const q of [[0,5.1,0,2.3],[1.25,5.2,.3,1.65],[-1.2,5,.15,1.7],[.2,6.5,0,1.8]]){
+  const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(q[3]*s,1),Math.random()>.5?leaf1:leaf2);crown.position.set(q[0]*s,q[1]*s,q[2]*s);crown.castShadow=true;g.add(crown);
+ }
+ g.position.set(x,0,z);scene.add(g);
+}
+function lamp(x,z,side=1){
+ const g=new THREE.Group();meshBox(g,0,3.8,0,.12,7.6,.12,mat(0x3b4143,.45,.35));
+ meshBox(g,side*.7,7.48,0,1.45,.09,.09,mat(0x3b4143,.45,.35));
+ const bulb=meshBox(g,side*1.35,7.35,0,.34,.16,.28,new THREE.MeshStandardMaterial({color:0xffe0a0,emissive:0xffbd55,emissiveIntensity:1.4}));
+ g.position.set(x,0,z);scene.add(g);
+}
+function bollard(x,z){const m=new THREE.Mesh(new THREE.CylinderGeometry(.11,.14,.7,8),mat(0x55595a,.65,.2));m.position.set(x,.35,z);m.castShadow=true;scene.add(m)}
+function planter(x,z){
+ const g=new THREE.Group();meshBox(g,0,.35,0,1.45,.7,1.45,mat(0xc7b98e));
+ const bush=new THREE.Mesh(new THREE.IcosahedronGeometry(.75,1),mat(0x496f35));bush.position.y=1.05;g.add(bush);g.position.set(x,0,z);scene.add(g);
+}
+function awning(x,y,z,color){
+ const a=meshBox(scene,x,y,z,.22,1.1,6,mat(color));a.rotation.z=.08;
+}
+function balcony(x,y,z,side){
+ const g=new THREE.Group();meshBox(g,0,0,0,.8,.12,3,mat(0xaaa69d));meshBox(g,side*.38,.55,0,.06,1.05,3,mat(0x4c4d4b,.5,.3));
+ g.position.set(x,y,z);scene.add(g);
+}
+// denser leafy boulevard similar to central Iğdır references
+for(let z=-160;z<=160;z+=23){detailedTree(-12.1,z,0.72);detailedTree(12.1,z+11,0.72)}
+for(let z=-160;z<=160;z+=26){lamp(-9.2,z,1);lamp(9.2,z+13,-1)}
+for(let z=-155;z<=155;z+=18){bollard(-11.2,z);bollard(11.2,z+9)}
+for(let z=-130;z<=130;z+=52){planter(-16,z);planter(16,z+20)}
+// storefront canopies and apartment balconies
+for(let z=-135;z<=135;z+=56){awning(-19.9,3.25,z,0x7f2623);awning(19.9,3.25,z+18,0x315c45)}
+for(let z=-145;z<=145;z+=56)for(let y=5.3;y<=10;y+=2.6){balcony(-19.9,y,z,1);balcony(19.9,y,z+18,-1)}
+// traffic signs
+function trafficSign(x,z,label){
+ const g=new THREE.Group();meshBox(g,0,1.4,0,.08,2.8,.08,mat(0x55585a,.5,.3));
+ const c=document.createElement("canvas");c.width=c.height=128;const q=c.getContext("2d");q.fillStyle="#225b9a";q.fillRect(0,0,128,128);q.strokeStyle="#fff";q.lineWidth=7;q.strokeRect(5,5,118,118);q.fillStyle="#fff";q.font="bold 50px Arial";q.textAlign="center";q.textBaseline="middle";q.fillText(label,64,64);
+ const p=new THREE.Mesh(new THREE.PlaneGeometry(1.1,1.1),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));p.position.set(0,2.7,.05);g.add(p);g.position.set(x,0,z);scene.add(g);
+}
+trafficSign(-10.7,-72,"P");trafficSign(10.7,94,"P");
+// distant layered foothills to make Ağrı Dağı sit naturally in the horizon
+for(const cfg of [[-95,-292,45,42,0x66705f],[92,-300,55,48,0x707166]]){
+ const h=new THREE.Mesh(new THREE.ConeGeometry(cfg[2],cfg[3],18),mat(cfg[4]));h.position.set(cfg[0],cfg[3]/2-2,cfg[1]);h.scale.x=2.4;scene.add(h);
+}
+// a small landscaped central strip / square
+for(let z=-35;z<=35;z+=14){const g=new THREE.Mesh(new THREE.CylinderGeometry(1.15,1.25,.25,12),mat(0xd5cfb9));g.position.set(0,.22,z);scene.add(g);const b=new THREE.Mesh(new THREE.IcosahedronGeometry(.75,1),mat(0x3e7035));b.position.set(0,1,z);scene.add(b)}
+
 // player
 const p={pos:new THREE.Vector3(0,1.72,145),velY:0,ground:true,r:.38};
 camera.position.copy(p.pos);
@@ -134,7 +188,7 @@ function loop(){
   if(p.pos.y<=1.72){p.pos.y=1.72;p.velY=0;p.ground=true}
   camera.position.copy(p.pos);
  }
- if(!locked){const t=performance.now()*.00012;camera.position.set(Math.sin(t)*34,8.5,112+Math.cos(t)*18);camera.lookAt(0,4,-25)}\n renderer.render(scene,camera);
+ sun.position.x=Math.sin(performance.now()*.000015)*90;\n if(!locked){const t=performance.now()*.00012;camera.position.set(Math.sin(t)*34,8.5,112+Math.cos(t)*18);camera.lookAt(0,4,-25)}\n renderer.render(scene,camera);
 }
 loop();
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
