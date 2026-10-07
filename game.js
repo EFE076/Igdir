@@ -2,13 +2,13 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.m
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x9bc8e4);
-scene.fog=new THREE.Fog(0x9bc8e4,100,310);
+scene.fog=new THREE.FogExp2(0x9bc8e4,0.0028);
 const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.1,600);
 camera.rotation.order="YXZ";
 const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setSize(innerWidth,innerHeight);
-renderer.shadowMap.enabled=true;
+renderer.shadowMap.enabled=true;\nrenderer.outputColorSpace=THREE.SRGBColorSpace;\nrenderer.toneMapping=THREE.ACESFilmicToneMapping;\nrenderer.toneMappingExposure=1.05;
 document.querySelector("#game").appendChild(renderer.domElement);
 
 scene.add(new THREE.HemisphereLight(0xe9f6ff,0x77835d,2.4));
@@ -27,9 +27,17 @@ function cylinder(x,y,z,r,h,color){
  m.position.set(x,y,z);m.castShadow=true;scene.add(m);return m;
 }
 
-// terrain + long Iğdır-style boulevard
+
+// procedural asphalt/paving textures
+function tex(draw){const c=document.createElement("canvas");c.width=c.height=256;const g=c.getContext("2d");draw(g);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;return t}
+const asphalt=tex(g=>{g.fillStyle="#55585a";g.fillRect(0,0,256,256);for(let i=0;i<1600;i++){let v=60+Math.random()*50;g.fillStyle="rgb("+v+","+v+","+v+")";g.fillRect(Math.random()*256,Math.random()*256,1,1)}});asphalt.repeat.set(3,45);
+const paving=tex(g=>{g.fillStyle="#aaa397";g.fillRect(0,0,256,256);g.strokeStyle="#777269";g.lineWidth=2;for(let y=0;y<256;y+=24){g.beginPath();g.moveTo(0,y);g.lineTo(256,y);g.stroke()}for(let x=0;x<256;x+=40){g.beginPath();g.moveTo(x,0);g.lineTo(x,256);g.stroke()}});paving.repeat.set(2,45);
+function slab(x,z,w,d,map){const m=new THREE.Mesh(new THREE.BoxGeometry(w,.14,d),new THREE.MeshStandardMaterial({map,roughness:.96}));m.position.set(x,.07,z);m.receiveShadow=true;scene.add(m)}
+function sign(x,y,z,text,color="#a52c26"){const c=document.createElement("canvas");c.width=512;c.height=128;const g=c.getContext("2d");g.fillStyle=color;g.fillRect(0,0,512,128);g.fillStyle="#fff";g.font="bold 46px Arial";g.textAlign="center";g.textBaseline="middle";g.fillText(text,256,64);const m=new THREE.Mesh(new THREE.PlaneGeometry(6,1.5),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)}));m.position.set(x,y,z);m.rotation.y=x<0?Math.PI/2:-Math.PI/2;scene.add(m)}
+function car(x,z,color){const g=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color,roughness:.5});const b=new THREE.Mesh(new THREE.BoxGeometry(3.5,.8,1.65),mat);b.position.y=.65;g.add(b);const t=new THREE.Mesh(new THREE.BoxGeometry(1.9,.65,1.45),new THREE.MeshStandardMaterial({color:0x82939a}));t.position.set(-.2,1.35,0);g.add(t);g.position.set(x,0,z);scene.add(g)}
+\n// terrain + long Iğdır-style boulevard
 box(0,-.5,0,300,1,420,0x809b61,false);
-box(0,.02,0,24,.12,380,0x55585a,false);
+slab(0,0,24,380,asphalt);
 box(-15,.08,0,6,.16,380,0xb8b1a3,false);
 box(15,.08,0,6,.16,380,0xb8b1a3,false);
 box(0,.12,0,1.5,.18,380,0xd6c66a,false);
@@ -81,7 +89,7 @@ for(let z=-165;z<=170;z+=30){
 box(0,.1,-190,75,.2,42,0xb8aa91,false);
 for(let x=-25;x<=25;x+=12) tree(x,-196,.9);
 
-// stylized Ağrı Dağı / Mount Ararat landmark in the distance
+sign(-19,3,-52,"GENÇLER PİDE");sign(19,3,35,"IĞDIR MARKET","#316849");sign(-19,3,62,"KAFE","#76513a");car(-7,-25,0x30363b);car(7,8,0xe2e0d8);car(-7,73,0x8f2d29);car(7,-105,0xbdbdb9);\n// stylized Ağrı Dağı / Mount Ararat landmark in the distance
 const mountainMat=new THREE.MeshStandardMaterial({color:0x6d6a67,roughness:1});
 const mountain=new THREE.Mesh(new THREE.ConeGeometry(72,95,32),mountainMat);
 mountain.position.set(0,38,-315);mountain.scale.x=1.75;scene.add(mountain);
@@ -94,7 +102,7 @@ camera.position.copy(p.pos);
 let yaw=0,pitch=0,locked=false;
 const keys={};
 const start=document.querySelector("#start");
-document.querySelector("#play").onclick=()=>renderer.domElement.requestPointerLock();
+const transition=document.querySelector("#transition");document.querySelector("#play").onclick=()=>{transition.classList.add("show");setTimeout(()=>renderer.domElement.requestPointerLock(),400);setTimeout(()=>transition.classList.remove("show"),850)};
 document.addEventListener("pointerlockchange",()=>{locked=document.pointerLockElement===renderer.domElement;start.style.display=locked?"none":"grid"});
 document.addEventListener("mousemove",e=>{
  if(!locked)return;
@@ -126,7 +134,7 @@ function loop(){
   if(p.pos.y<=1.72){p.pos.y=1.72;p.velY=0;p.ground=true}
   camera.position.copy(p.pos);
  }
- renderer.render(scene,camera);
+ if(!locked){const t=performance.now()*.00012;camera.position.set(Math.sin(t)*34,8.5,112+Math.cos(t)*18);camera.lookAt(0,4,-25)}\n renderer.render(scene,camera);
 }
 loop();
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
