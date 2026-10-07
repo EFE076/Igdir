@@ -109,6 +109,74 @@ for(const z of[-110,-35,55,135])for(const x of[-60,-46,46,60]){
  building(x,z+(x<0?-18:18),16,17,3+((Math.abs(x)+Math.abs(z))%3),seed++);
 }
 
+
+// --- IĞDIR MERKEZ EXPANSION ---
+// The playable district follows the visible center pattern: dense short streets,
+// a diagonal D080 spine, Atatürk/Kurtuluş-style connectors and compact urban blocks.
+function roadSegment(x1,z1,x2,z2,width=10){
+ const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz),a=Math.atan2(dx,dz);
+ const road=new THREE.Mesh(new THREE.BoxGeometry(width,.11,len),new THREE.MeshStandardMaterial({map:asphalt,roughness:.96}));
+ road.position.set((x1+x2)/2,.055,(z1+z2)/2);road.rotation.y=a;road.receiveShadow=true;scene.add(road);
+ // edge sidewalks
+ for(const side of[-1,1]){
+  const sw=new THREE.Mesh(new THREE.BoxGeometry(2.3,.15,len),new THREE.MeshStandardMaterial({map:pavers,roughness:.95}));
+  sw.position.set((x1+x2)/2+Math.cos(a)*side*(width/2+1.15),.095,(z1+z2)/2-Math.sin(a)*side*(width/2+1.15));
+  sw.rotation.y=a;sw.receiveShadow=true;scene.add(sw);
+ }
+}
+function streetLabel(text,x,z,rot=0){
+ const c=document.createElement("canvas");c.width=512;c.height=96;const g=c.getContext("2d");
+ g.fillStyle="rgba(34,38,38,.88)";g.roundRect(4,4,504,88,16);g.fill();g.fillStyle="#fff";g.font="700 35px Arial";g.textAlign="center";g.textBaseline="middle";g.fillText(text,256,49);
+ const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
+ const s=new THREE.Mesh(new THREE.PlaneGeometry(7.5,1.4),new THREE.MeshBasicMaterial({map:t,transparent:true,side:THREE.DoubleSide}));
+ s.position.set(x,3.4,z);s.rotation.y=rot;scene.add(s);
+}
+// western/eastern district roads
+roadSegment(-128,-178,-22,185,14); // D080 diagonal
+roadSegment(-92,-178,-66,180,9);
+roadSegment(-58,-180,-45,182,8);
+roadSegment(47,-180,52,182,9);
+roadSegment(76,-180,94,180,9);
+roadSegment(112,-180,138,180,8);
+for(const z of[-165,-142,-88,-62,-10,22,84,112,162]){
+ roadSegment(-145,z,145,z+(z%3)*2,7.5);
+}
+// irregular connectors echoing the dense center
+roadSegment(-137,120,-55,22,7);roadSegment(-112,170,-30,84,7);
+roadSegment(40,160,132,102,7);roadSegment(48,92,138,28,7);
+roadSegment(42,-4,128,-68,7);roadSegment(45,-82,116,-165,7);
+streetLabel("D080", -105,55,.28);
+streetLabel("ATATÜRK CD.",48,118,0);
+streetLabel("KURTULUŞ CD.",82,-12,0);
+streetLabel("TOPÇULAR CD.",-58,-70,.1);
+
+// secondary urban blocks outside the original avenue
+function simpleBlock(x,z,w,d,floors,color){
+ const h=3.2+floors*2.9;box(x,h/2,z,w,h,d,color,true);
+ const side=x<0?1:-1,face=x+side*(w/2+.03);
+ for(let fy=4.6;fy<h-1;fy+=2.9)for(let q=-d*.34;q<=d*.34;q+=3.0){
+  box(face,fy,z+q,.13,1.35,1.05,0xded8ca);box(face+side*.07,fy,z+q,.11,1.08,.82,0x55717b);
+ }
+ box(x,h+.24,z,w+.15,.48,d+.15,0xaaa397);
+}
+const outerBlocks=[
+ [-124,-135,15,18,3],[-103,-112,17,16,4],[-83,-145,14,17,3],[-70,-100,16,14,4],
+ [-130,-35,17,16,3],[-106,-12,16,18,4],[-80,-42,15,15,5],[-61,-8,14,17,4],
+ [-132,55,16,17,4],[-105,72,15,16,5],[-82,42,16,15,4],[-61,76,15,18,4],
+ [-132,145,16,17,3],[-102,130,18,15,4],[-77,155,15,16,3],[-57,125,14,17,4],
+ [62,-145,15,17,4],[84,-126,17,15,5],[109,-145,15,17,3],[132,-118,16,16,4],
+ [62,-52,15,17,5],[87,-35,17,15,4],[112,-58,16,16,4],[134,-28,15,17,3],
+ [63,38,16,17,4],[88,60,16,15,5],[112,32,15,17,4],[135,72,16,16,3],
+ [62,135,16,17,4],[87,148,17,15,3],[112,122,15,16,5],[136,152,16,16,4]
+];
+outerBlocks.forEach((b,i)=>simpleBlock(...b,facadeColors[(i+2)%facadeColors.length]));
+
+// a recognizable municipal/civic square anchor
+slab(72,104,31,28,pavers,.12);
+box(72,1.0,104,7,2,7,0xbdb5a3);
+cyl(72,4.1,104,.38,6.2,0x7b7468,12);
+for(const p of [[61,94],[82,94],[61,115],[82,115]])tree(p[0],p[1],.95);
+
 // greenery based on Iğdır's tree-lined central streets
 function tree(x,z,s=1){
  cyl(x,2.1*s,z,.38*s,4.2*s,0x5c4531,10);
