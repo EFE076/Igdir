@@ -1,77 +1,37 @@
 <!DOCTYPE html>
 <html lang="nl">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Iğdır</title>
-
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iğdır</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+    }
+  }
+  </script>
 </head>
-
 <body>
-
-    <!-- THREE.JS GAME -->
-    <div id="game"></div>
-
-
-    <!-- START SCREEN -->
-    <div id="start">
-
-        <div class="cinematic-top"></div>
-
-        <div class="menu-content">
-
-            <p class="eyebrow">
-                DOĞU'NUN SINIRINDA
-            </p>
-
-            <h1>
-                IĞDIR
-            </h1>
-
-            <div class="gold-line"></div>
-
-            <p class="description">
-                Ağrı Dağı'nın gölgesinde şehri keşfet.
-            </p>
-
-            <button id="play">
-                ŞEHRE GİR
-            </button>
-
-            <p class="controls">
-                WASD HAREKET • MOUSE BAKIŞ • SHIFT KOŞ • SPACE ZIPLA • N GECE/GÜNDÜZ
-            </p>
-
-        </div>
-
-
-        <div class="location-card">
-
-            <span>
-                KONUM
-            </span>
-
-            <strong>
-                IĞDIR / TÜRKİYE
-            </strong>
-
-        </div>
-
-        <div class="cinematic-bottom"></div>
-
+  <div id="game"></div>
+  <div id="start">
+    <div class="shade"></div>
+    <div class="brand">
+      <div class="eyebrow">DOĞU'NUN SINIRINDA</div>
+      <h1>IĞDIR</h1>
+      <div class="rule"></div>
+      <p>Ağrı Dağı'nın gölgesinde şehri keşfet.</p>
+      <button id="play">ŞEHRE GİR <b>→</b></button>
+      <small>WASD HAREKET · MOUSE BAKIŞ · SHIFT KOŞ · SPACE ZIPLA · N GECE/GÜNDÜZ</small>
     </div>
-
-
-    <!-- BLACK TRANSITION -->
-    <div id="transition"></div>
-
-
-    <!-- GAME SCRIPT -->
-    <script type="module" src="./game.js"></script>
-
+    <div class="loc"><b>IĞDIR / TÜRKİYE</b><span>KONUM</span></div>
+    <div class="bars"></div>
+  </div>
+  <div id="transition"><span>IĞDIR</span></div>
+  <div id="hud"><span>IĞDIR</span><small>MERKEZ</small></div>
+  <div id="crosshair"></div>
+  <script type="module" src="./game.js"></script>
 </body>
-
 </html>
