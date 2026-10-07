@@ -1,4 +1,5 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js";
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0xa7cfe4);
@@ -167,6 +168,29 @@ function mountain(cx,cz,radius,height,color,snow=false){
 }
 mountain(-5,-360,112,125,0x716d68,true);mountain(108,-354,52,72,0x77716b,false);
 
+
+// external GLB population assets
+const loader=new GLTFLoader();
+const walkers=[];
+function fitModel(obj,targetHeight){
+ const b=new THREE.Box3().setFromObject(obj),s=new THREE.Vector3();b.getSize(s);
+ const k=targetHeight/Math.max(s.y,.001);obj.scale.setScalar(k);
+ const b2=new THREE.Box3().setFromObject(obj);obj.position.y-=b2.min.y;
+}
+function loadPopulation(){
+ loader.load("./assets/human.glb",g=>{
+  const template=g.scene;fitModel(template,1.72);
+  const spots=[[-14,142,Math.PI],[-17,105,0],[14,82,Math.PI],[17,22,0],[-16,-12,Math.PI],[15,-70,0],[-17,-145,Math.PI],[16,-160,0]];
+  spots.forEach((p,i)=>{const o=template.clone(true);o.position.x=p[0];o.position.z=p[1];o.rotation.y=p[2];o.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});scene.add(o);walkers.push({o,dir:i%2?1:-1,speed:.35+(i%3)*.08,baseX:p[0]})});
+ },undefined,e=>console.warn("human.glb kon niet laden",e));
+ loader.load("./assets/generic_80s_european_car.glb",g=>{
+  const template=g.scene;fitModel(template,1.45);
+  const spots=[[-7.7,126,0],[7.7,65,Math.PI],[-7.7,-52,0],[7.7,-142,Math.PI],[-50,-103,Math.PI/2],[50,60,-Math.PI/2]];
+  spots.forEach(p=>{const o=template.clone(true);o.position.set(p[0],0,p[1]);o.rotation.y=p[2];o.traverse(n=>{if(n.isMesh){n.castShadow=true;n.receiveShadow=true}});scene.add(o)});
+ },undefined,e=>console.warn("car.glb kon niet laden",e));
+}
+loadPopulation();
+
 // menu cinematic / player
 const p={pos:new THREE.Vector3(0,1.72,165),velY:0,ground:true,r:.38};camera.position.copy(p.pos);
 let yaw=0,pitch=0,locked=false,isNight=false;const keys={};
@@ -191,7 +215,7 @@ function loop(){
  }else{
   const t=performance.now()*.0001;camera.position.set(Math.sin(t)*42,10,128+Math.cos(t)*25);camera.lookAt(0,5,-45);
  }
- renderer.render(scene,camera);
+ walkers.forEach(w=>{w.o.position.z+=w.dir*w.speed*dt;if(w.o.position.z>178||w.o.position.z<-178){w.dir*=-1;w.o.rotation.y+=Math.PI}});\n renderer.render(scene,camera);
 }
 loop();
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
