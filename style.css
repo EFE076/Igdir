@@ -1,1 +1,207 @@
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0d1518;font-family:Arial,sans-serif}canvas{display:block}#game{position:fixed;inset:0}#start{position:fixed;inset:0;z-index:10;color:#fff;overflow:hidden}.shade{position:absolute;inset:0;background:linear-gradient(90deg,#050a0ce8 0%,#050a0c77 40%,transparent 75%),linear-gradient(0deg,#0007,transparent 55%);pointer-events:none}.brand{position:absolute;left:7vw;top:50%;transform:translateY(-50%);width:min(600px,82vw);text-shadow:0 3px 18px #000}.eyebrow{font-size:11px;font-weight:800;letter-spacing:5px;opacity:.72;margin-bottom:14px}.brand h1{font-size:clamp(72px,10vw,145px);line-height:.8;letter-spacing:-6px;margin:0;font-weight:900}.rule{height:4px;width:72px;background:#d7bd75;margin:28px 0 18px}.brand p{font-size:18px;opacity:.82;margin:0 0 30px}.brand button{width:260px;height:57px;border:1px solid #fff8;background:#f2f0e8;color:#111;display:flex;align-items:center;justify-content:space-between;padding:0 21px;font-weight:900;font-size:14px;letter-spacing:2px;cursor:pointer;transition:.25s}.brand button:hover{width:285px;background:#d7bd75}.brand button b{font-size:24px;font-weight:400}.brand small{display:block;margin-top:20px;font-size:9px;letter-spacing:1.5px;opacity:.52}.loc{position:absolute;right:4vw;bottom:5vh;text-align:right;text-shadow:0 2px 8px #000}.loc b{display:block;font-size:18px;letter-spacing:4px}.loc span{font-size:9px;letter-spacing:2px;opacity:.65}.bars:before,.bars:after{content:"";position:absolute;left:0;width:100%;height:3vh;background:#050505;z-index:3}.bars:before{top:0}.bars:after{bottom:0}#transition{position:fixed;inset:0;z-index:20;background:#080a0b;display:grid;place-items:center;color:#fff;opacity:0;pointer-events:none;transition:opacity .4s}#transition.show{opacity:1}#transition span{font-size:42px;font-weight:900;letter-spacing:12px}#hud{position:fixed;left:24px;top:20px;color:#fff;text-shadow:0 2px 4px #0008;pointer-events:none;opacity:.72}#hud span{display:block;font-weight:900;font-size:21px;letter-spacing:2px}#hud small{font-size:9px;letter-spacing:2px}#crosshair{position:fixed;left:50%;top:50%;width:4px;height:4px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;opacity:.7}
+* {
+    box-sizing: border-box
+}
+
+html,
+body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #0d1518;
+    font-family: Arial, sans-serif
+}
+
+canvas {
+    display: block
+}
+
+#game {
+    position: fixed;
+    inset: 0
+}
+
+#start {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    color: #fff;
+    overflow: hidden
+}
+
+.shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, #050a0ce8 0%, #050a0c77 40%, transparent 75%), linear-gradient(0deg, #0007, transparent 55%);
+    pointer-events: none
+}
+
+.brand {
+    position: absolute;
+    left: 7vw;
+    top: 50%;
+    transform: translateY(-50%);
+    width: min(600px, 82vw);
+    text-shadow: 0 3px 18px #000
+}
+
+.eyebrow {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 5px;
+    opacity: .72;
+    margin-bottom: 14px
+}
+
+.brand h1 {
+    font-size: clamp(72px, 10vw, 145px);
+    line-height: .8;
+    letter-spacing: -6px;
+    margin: 0;
+    font-weight: 900
+}
+
+.rule {
+    height: 4px;
+    width: 72px;
+    background: #d7bd75;
+    margin: 28px 0 18px
+}
+
+.brand p {
+    font-size: 18px;
+    opacity: .82;
+    margin: 0 0 30px
+}
+
+.brand button {
+    width: 260px;
+    height: 57px;
+    border: 1px solid #fff8;
+    background: #f2f0e8;
+    color: #111;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 21px;
+    font-weight: 900;
+    font-size: 14px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: .25s
+}
+
+.brand button:hover {
+    width: 285px;
+    background: #d7bd75
+}
+
+.brand button b {
+    font-size: 24px;
+    font-weight: 400
+}
+
+.brand small {
+    display: block;
+    margin-top: 20px;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    opacity: .52
+}
+
+.loc {
+    position: absolute;
+    right: 4vw;
+    bottom: 5vh;
+    text-align: right;
+    text-shadow: 0 2px 8px #000
+}
+
+.loc b {
+    display: block;
+    font-size: 18px;
+    letter-spacing: 4px
+}
+
+.loc span {
+    font-size: 9px;
+    letter-spacing: 2px;
+    opacity: .65
+}
+
+.bars:before,
+.bars:after {
+    content: "";
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 3vh;
+    background: #050505;
+    z-index: 3
+}
+
+.bars:before {
+    top: 0
+}
+
+.bars:after {
+    bottom: 0
+}
+
+#transition {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: #080a0b;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .4s
+}
+
+#transition.show {
+    opacity: 1
+}
+
+#transition span {
+    font-size: 42px;
+    font-weight: 900;
+    letter-spacing: 12px
+}
+
+#hud {
+    position: fixed;
+    left: 24px;
+    top: 20px;
+    color: #fff;
+    text-shadow: 0 2px 4px #0008;
+    pointer-events: none;
+    opacity: .72
+}
+
+#hud span {
+    display: block;
+    font-weight: 900;
+    font-size: 21px;
+    letter-spacing: 2px
+}
+
+#hud small {
+    font-size: 9px;
+    letter-spacing: 2px
+}
+
+#crosshair {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: 4px;
+    height: 4px;
+    background: #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    opacity: .7
+}
